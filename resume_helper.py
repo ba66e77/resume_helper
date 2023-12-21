@@ -1,9 +1,10 @@
 """Resume Helper
 
-@todo Define a text delimiter and replace text in the resume and cover letter with a text string
+@todo Add a --fetch option which will instead download the files from Google as PDF and store them in the local file system.
 """
 
 import argparse
+import datetime
 import os.path
 
 from google.auth.transport.requests import Request
@@ -13,7 +14,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ["https://www.googleapis.com/auth/drive"]
+SCOPES = [
+  "https://www.googleapis.com/auth/drive", # drive scope for copying files
+  "https://www.googleapis.com/auth/documents" # document scope for editing files
+]
 
 # The ID of base resume document.
 RESUME_DOCUMENT_ID = "1aZAY2BK0lA7cDR7V6u1UG7__xsC1d_5sigXj9PO1-yc"
@@ -46,27 +50,79 @@ def main(company_name: str, role_name: str):
       token.write(creds.to_json())
 
   try:
-    service = build("drive", "v3", credentials=creds)
+    drive_service = build("drive", "v3", credentials=creds)
+    document_service = build('docs', "v1", credentials=creds)
 
     # todo: refactor for DRY
     # todo: encapsulate this
     new_resume_name = _build_document_name('resume', company_name, role_name)
-    resume = _copy_document(service, RESUME_DOCUMENT_ID, new_resume_name)
+    resume = _copy_document(drive_service, RESUME_DOCUMENT_ID, new_resume_name)
 
-    resume_file_url = f"https://docs.google.com/document/d/{resume.get('id')}/edit"
+    resume_id = resume.get('id')
+    resume_file_url = f"https://docs.google.com/document/d/{resume_id}/edit"
     # end encapsulate todo
 
     new_coverletter_name = _build_document_name('coverletter', company_name, role_name)
-    coverletter = _copy_document(service, COVERLETTER_DOCUMENT_ID, new_coverletter_name)
+    coverletter = _copy_document(drive_service, COVERLETTER_DOCUMENT_ID, new_coverletter_name)
 
-    coverletter_file_url = f"https://docs.google.com/document/d/{coverletter.get('id')}/edit"
+    coverletter_id = coverletter.get('id')
+    coverletter_file_url = f"https://docs.google.com/document/d/{coverletter_id}/edit"
 
     print(f"The new resume is: {resume_file_url}")
     print(f"The new cover letter is: {coverletter_file_url}")
     # end refactor todo
+  
+    date = datetime.datetime.now().strftime('%Y-%m-%d')
+
+    for document in [coverletter_id, resume_id]:
+      _replace_text(document_service, document, company_name, role_name, date)
 
   except HttpError as err:
     print(err)
+
+def _replace_text(document_service, document_id: str, company_name: str, role_name: str, date_string: datetime):
+  """
+  cover letter fields: {{date}}, {{title}}, {{company_name}}
+
+  resume fields: {{title}}
+  """
+
+  requests = [
+         {
+            'replaceAllText': {
+                'containsText': {
+                    'text': '{{title}}',
+                    'matchCase':  'true'
+                },
+                'replaceText': role_name,
+            }
+          },
+          {
+            'replaceAllText': {
+                'containsText': {
+                    'text': '{{company_name}}',
+                    'matchCase':  'true'
+                },
+                'replaceText': company_name,
+            }
+          },
+          {
+            'replaceAllText': {
+                'containsText': {
+                    'text': '{{date}}',
+                    'matchCase':  'true'
+                },
+                'replaceText': date_string,
+            }
+          }
+  ]
+  
+  result = document_service.documents().batchUpdate(
+          documentId=document_id, 
+          body={'requests': requests}
+        ).execute()
+  
+  return result
 
 def _copy_document(service, document_id: str, new_name: str):
   new_document = service.files().copy(fileId=document_id, body={'name': new_name} ).execute()
@@ -105,7 +161,7 @@ def _build_document_name(document_type: str, company_name: str, role_name: str) 
     return document_name
 
 if __name__ == "__main__":
-  company_name = vars(_parse_args()).pop('company_name')
-  role_name = vars(_parse_args()).pop('role_name')
+    company_name = vars(_parse_args()).pop('company_name')
+    role_name = vars(_parse_args()).pop('role_name')
 
-  main(company_name, role_name)
+    main(company_name, role_name)
