@@ -1,15 +1,5 @@
 """Resume Helper
 
-From a default resume in GDrive, make a copy of the file renamed to include a role modifier. For example, if applying to
-"Role X" and "Company Y", it would create a copy of the template file with a new name of "Resume - Company X - Role Y".
-
-Code _borrowed_ heavily from https://developers.google.com/docs/api/quickstart/python.
-
-_Caveat Emptor_: I haven't tested by special characters in the modifier may cause issues.
-
-Set up: Follow the instructions for setting up an application and downloading a credentials.json in the google link above.
-
-@todo Add handling for a cover letter also
 @todo Define a text delimiter and replace text in the resume and cover letter with a text string
 """
 
@@ -33,6 +23,8 @@ COVERLETTER_DOCUMENT_ID = "1fo-3MXG_Nitq1T5WQV-FHN1ePp2rVGBrZSYNWI_L6x4"
 def main(company_name: str, role_name: str):
   """Shows basic usage of the Docs API.
   Prints the title of a sample document.
+
+  @todo refactor creds functionality out to separate function
   """
   creds = None
   # The file token.json stores the user's access and refresh tokens, and is
@@ -56,11 +48,13 @@ def main(company_name: str, role_name: str):
   try:
     service = build("drive", "v3", credentials=creds)
 
-    # todo: Refactor this to be DRY
+    # todo: refactor for DRY
+    # todo: encapsulate this
     new_resume_name = _build_document_name('resume', company_name, role_name)
     resume = _copy_document(service, RESUME_DOCUMENT_ID, new_resume_name)
 
     resume_file_url = f"https://docs.google.com/document/d/{resume.get('id')}/edit"
+    # end encapsulate todo
 
     new_coverletter_name = _build_document_name('coverletter', company_name, role_name)
     coverletter = _copy_document(service, COVERLETTER_DOCUMENT_ID, new_coverletter_name)
