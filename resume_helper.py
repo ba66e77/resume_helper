@@ -24,6 +24,7 @@ RESUME_DOCUMENT_ID = "1aZAY2BK0lA7cDR7V6u1UG7__xsC1d_5sigXj9PO1-yc"
 COVERLETTER_DOCUMENT_ID = "1fo-3MXG_Nitq1T5WQV-FHN1ePp2rVGBrZSYNWI_L6x4"
 
 def _get_credentials(token_file_path: str = "token.json", credentials_file_path: str = "credentials.json") -> Credentials:
+  """Authenticate to the Google API."""
   creds = None
 
   # The file token.json stores the user's access and refresh tokens, and is
@@ -49,6 +50,8 @@ def _get_credentials(token_file_path: str = "token.json", credentials_file_path:
   return creds
 
 def _build_document_url(document_id: str) -> str:
+  """Build the URL for accessing a Google Doc."""
+
   return f"https://docs.google.com/document/d/{document_id}/edit"
 
 def main(company_name: str, role_name: str) -> None:
@@ -136,6 +139,7 @@ def _replace_text(document_service: Resource, document_id: str, company_name: st
   return result
 
 def _copy_document(service: Resource, document_id: str, new_name: str) -> dict:
+  """Create a new Google document by cloning another doc."""
   new_document = service.files().copy(fileId=document_id, body={'name': new_name} ).execute()
 
   return new_document
@@ -159,6 +163,8 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def _build_document_name(document_type: str, company_name: str, role_name: str) -> str:
+    """Build a standard name for a document based on parameters."""
+
     match document_type:
       case 'resume':
         type_name = 'Resume'
