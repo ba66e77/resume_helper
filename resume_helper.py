@@ -24,7 +24,8 @@ SCOPES = [
 ]
 
 # The ID of base resume document.
-RESUME_DOCUMENT_ID = "1aZAY2BK0lA7cDR7V6u1UG7__xsC1d_5sigXj9PO1-yc"
+# @todo: Make these configurations in a TOML file or something.
+RESUME_DOCUMENT_ID = "19tjqMVm5-JDMGgVtIbaPLTuHymWNZUxT2R_83FrYM3g"
 COVERLETTER_DOCUMENT_ID = "1fo-3MXG_Nitq1T5WQV-FHN1ePp2rVGBrZSYNWI_L6x4"
 
 
