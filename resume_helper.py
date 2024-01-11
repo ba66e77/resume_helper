@@ -78,7 +78,7 @@ def _build_document_url(document_id: str) -> str:
     return f"https://docs.google.com/document/d/{document_id}/edit"
 
 
-def main(company_name: str, role_name: str) -> None:
+def main(company_name: str, role_name: str, generate_cover_letter: bool = True) -> None:
     """Main loop method for doing all the things.
 
     Prints the title of a sample document.
@@ -86,6 +86,8 @@ def main(company_name: str, role_name: str) -> None:
     creds = _get_credentials()
 
     try:
+        date = datetime.datetime.now().strftime('%Y-%m-%d')
+
         drive_service = build("drive", "v3", credentials=creds)
         document_service = build('docs', "v1", credentials=creds)
 
@@ -96,22 +98,20 @@ def main(company_name: str, role_name: str) -> None:
 
         resume_id = resume.get('id')
         resume_file_url = _build_document_url(resume_id)
+        _replace_text(document_service, resume_id, company_name, role_name, date)
         # end encapsulate todo
 
-        new_coverletter_name = _build_document_name('coverletter', company_name, role_name)
-        coverletter = _copy_document(drive_service, COVERLETTER_DOCUMENT_ID, new_coverletter_name)
-
-        coverletter_id = coverletter.get('id')
-        coverletter_file_url = _build_document_url(coverletter_id)
-
         print(f"The new resume is: {resume_file_url}")
-        print(f"The new cover letter is: {coverletter_file_url}")
+
+        if generate_cover_letter:
+            new_coverletter_name = _build_document_name('coverletter', company_name, role_name)
+            coverletter = _copy_document(drive_service, COVERLETTER_DOCUMENT_ID, new_coverletter_name)
+
+            coverletter_id = coverletter.get('id')
+            coverletter_file_url = _build_document_url(coverletter_id)
+            _replace_text(document_service, coverletter_id, company_name, role_name, date)
+            print(f"The new cover letter is: {coverletter_file_url}")
         # end refactor todo
-
-        date = datetime.datetime.now().strftime('%Y-%m-%d')
-
-        for document in [coverletter_id, resume_id]:
-            _replace_text(document_service, document, company_name, role_name, date)
 
     except HttpError as err:
         print(err)
@@ -188,6 +188,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument('role_name',
                         help="The role name to be added to the title of the new file."
                         )
+    
+    parser.add_argument('-n', '--no-cover-letter',
+                        dest="generate_cover_letter",
+                        action="store_false",
+                        default=True,
+                        help="Suppress generation of a cover letter."
+                        )
 
     return parser.parse_args()
 
@@ -211,5 +218,6 @@ def _build_document_name(document_type: str, company_name: str, role_name: str) 
 if __name__ == "__main__":
     company_name = vars(_parse_args()).pop('company_name')
     role_name = vars(_parse_args()).pop('role_name')
-
-    main(company_name, role_name)
+    generate_cover_letter = vars(_parse_args()).pop('generate_cover_letter')
+    
+    main(company_name, role_name, generate_cover_letter)
