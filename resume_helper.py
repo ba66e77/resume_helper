@@ -210,7 +210,7 @@ def _build_document_name(document_type: str, company_name: str, role_name: str) 
         case _:
             raise ValueError(f'Document Type must be one of resume or coverletter. Got {document_type}')
 
-    document_name = f'{type_name} - {company_name} - {role_name}'
+    document_name = f'Barrett Smith - {type_name} - {company_name} - {role_name}'
 
     return document_name
 
